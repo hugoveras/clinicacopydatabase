@@ -59,7 +59,7 @@ async fn main() -> Result<(), std::io::Error>  {
     println!("Nombre de la base de datos.............{}", databasename);
     println!("Nombrel usuario........................{}", username);
     println!("Password de la base de datos...........{}", password);
-    println!("Tenat id ..............................{}", tenantid);
+    println!("Tenant id ..............................{}", tenantid);
     //--------------------------------------------------------------------------------------------
     getCSVfile(filepath.to_string(), tenantid.to_string()).await;
     Ok(())
