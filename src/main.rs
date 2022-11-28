@@ -19,18 +19,8 @@ async fn process_csv(path:String, tenantid:String, pool: Pool<Postgres>){
             for record in reader.deserialize() {
                 let resp_record: Result<MedicoDataCSV, Error> = record;
                 match resp_record {
-                    Ok(mut record)=>{
+                    Ok(record)=>{
                         println!("Insertando record...");
-
-                        record = clean_null_fields(record).await;
-                        println!(
-                            "Id= {}, Title= {}, Nombre= {}, Apellidos= {}.",
-                            record.id,
-                            record.title,
-                            record.nombre,
-                            record.apellidos
-                        );
-                        
                         let res = insert_medico(record.clone(), tenantid.clone(), pool.clone(), path.clone()).await;
                         println!("Resultado: {:?}", res);
                     },
@@ -99,7 +89,7 @@ async fn main() -> Result<(), std::io::Error>  {
 
 pub async fn insert_medico(medico_data_csv:MedicoDataCSV, tenant_id: String, db_connection: Pool<Postgres>, path: String) -> String {
     let mut photo:Vec<u8> = vec![];
-    let photo_filename = format!("{} {}.jpg", medico_data_csv.nombre, medico_data_csv.apellidos);
+    let photo_filename = format!("{} {}.jpg", medico_data_csv.nombre.trim(), medico_data_csv.apellidos.trim());
 
     let photo_path = Path::new(&path).join("Fotos").join(photo_filename.clone());
     println!("Foto: {:?}",photo_path);
@@ -140,18 +130,18 @@ pub async fn insert_medico(medico_data_csv:MedicoDataCSV, tenant_id: String, db_
         RETURNING id"
     );
     let rows_result = sqlx::query(sqlquery.as_str())
-        .bind(&medico_data_csv.title)
-        .bind(&medico_data_csv.nombre)
-        .bind(&medico_data_csv.apellidos)
-        .bind(&medico_data_csv.especialidad)
-        .bind(&medico_data_csv.consultorio)
-        .bind(&medico_data_csv.horario)
-        .bind(&medico_data_csv.telefono)
-        .bind(&medico_data_csv.email)
-        .bind(&medico_data_csv.extension)
+        .bind(&medico_data_csv.title.trim().replace("NULL", ""))
+        .bind(&medico_data_csv.nombre.trim().replace("NULL", ""))
+        .bind(&medico_data_csv.apellidos.trim().replace("NULL", ""))
+        .bind(&medico_data_csv.especialidad.trim().replace("NULL", ""))
+        .bind(&medico_data_csv.consultorio.trim().replace("NULL", ""))
+        .bind(&medico_data_csv.horario.trim().replace("NULL", ""))
+        .bind(&medico_data_csv.telefono.trim().replace("NULL", ""))
+        .bind(&medico_data_csv.email.trim().replace("NULL", ""))
+        .bind(&medico_data_csv.extension.trim().replace("NULL", ""))
         .bind("")
         .bind(&photo)
-        .bind(&medico_data_csv.movil)
+        .bind(&medico_data_csv.movil.trim().replace("NULL", ""))
         .bind("")
         .bind(tenant_id)
         .bind("Activo")
@@ -159,7 +149,7 @@ pub async fn insert_medico(medico_data_csv:MedicoDataCSV, tenant_id: String, db_
         .bind("")
         .bind("")
         .bind("")
-        .bind(&medico_data_csv.movil)
+        .bind(&medico_data_csv.movil.trim().replace("NULL", ""))
         .fetch_one(&db_connection)
         .await;
 
@@ -171,39 +161,4 @@ pub async fn insert_medico(medico_data_csv:MedicoDataCSV, tenant_id: String, db_
             why.to_string()
         }
     }
-}
-
-
-async fn clean_null_fields(mut record: MedicoDataCSV) -> MedicoDataCSV {
-    if record.nombre == "NULL"{
-        record.nombre = String::from("");
-    }
-    if record.apellidos == "NULL" {
-        record.apellidos = String::from("");
-    }
-    if record.title == "NULL" {
-        record.title = String::from("");
-    }
-    if record.horario == "NULL" {
-        record.horario = String::from("");
-    }
-    if record.consultorio == "NULL" {
-        record.consultorio = String::from("");
-    }
-    if record.extension == "NULL" {
-        record.extension = String::from("");
-    }
-    if record.email == "NULL" {
-        record.email = String::from("");
-    }
-    if record.telefono == "NULL" {
-        record.telefono = String::from("");
-    }
-    if record.movil == "NULL" {
-        record.movil = String::from("");
-    }
-    if record.especialidad == "NULL" {
-        record.especialidad = String::from("");
-    }
-    record
 }
